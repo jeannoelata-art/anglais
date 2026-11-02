@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E7A4F">
+<title>Mon anglais – Test de niveau</title>
+<style>
+:root{
+  --fond:#F1F6F3; --carte:#FFFFFF; --encre:#12261F; --doux:#5B6F66;
+  --vert:#0E7A4F; --vert-clair:#DCEFE5; --soleil:#F2B705; --rouge:#C9322A; --rouge-clair:#FBE3E1;
+  --ligne:#CFDDD5;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{
+  background:var(--fond);color:var(--encre);
+  font-family:"Trebuchet MS","Segoe UI",Roboto,sans-serif;font-size:18px;line-height:1.45;
+  padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
+}
+main{max-width:560px;margin:0 auto;padding:20px 18px 40px}
+h1{font-size:30px;line-height:1.15;margin:8px 0 12px}
+h2{font-size:22px;margin:0 0 10px}
+p{margin:0 0 14px}
+.doux{color:var(--doux);font-size:16px}
+.ecran{display:none}
+.ecran.actif{display:block}
+.barre{height:8px;background:var(--ligne);border-radius:8px;overflow:hidden;margin:4px 0 6px}
+.barre i{display:block;height:100%;width:0;background:var(--vert);transition:width .3s}
+.compteur{font-size:15px;color:var(--doux);margin-bottom:16px}
+button{
+  font:inherit;border:0;border-radius:16px;padding:16px 18px;width:100%;
+  cursor:pointer;text-align:left;
+}
+button:focus-visible{outline:3px solid var(--soleil);outline-offset:2px}
+.principal{background:var(--vert);color:#fff;font-weight:700;text-align:center;font-size:20px;padding:18px}
+.principal:active{background:#0A6340}
+.secondaire{background:var(--vert-clair);color:var(--vert);font-weight:700;text-align:center}
+.discret{background:transparent;color:var(--doux);text-align:center;font-size:16px;padding:12px}
+.ecoute{
+  background:var(--soleil);color:var(--encre);font-weight:700;text-align:center;
+  font-size:22px;padding:28px 18px;border-radius:24px;margin-bottom:12px;
+}
+.ecoute:active{filter:brightness(.95)}
+.choix{
+  background:var(--carte);border:2px solid var(--ligne);margin-bottom:10px;font-size:18px;
+}
+.choix.bon{border-color:var(--vert);background:var(--vert-clair)}
+.choix.mauvais{border-color:var(--rouge);background:var(--rouge-clair)}
+.choix[disabled]{cursor:default}
+.nsp{background:transparent;color:var(--doux);text-align:center;font-size:16px;padding:10px}
+.bilan{background:var(--carte);border-radius:20px;padding:18px;margin:14px 0}
+.bilan .en{font-size:24px;font-weight:700;margin-bottom:6px}
+.bilan .fr{color:var(--doux)}
+.verdict{font-weight:700;margin-bottom:8px}
+.verdict.ok{color:var(--vert)} .verdict.non{color:var(--rouge)}
+.micro-retour{min-height:26px;margin:10px 0;font-weight:700}
+.niveau{
+  background:var(--vert);color:#fff;border-radius:24px;padding:24px 20px;margin:12px 0 16px;
+}
+.niveau b{font-size:34px;display:block;line-height:1.1}
+.ligne{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--ligne)}
+.ligne:last-child{border-bottom:0}
+.espace{height:10px}
+@media (prefers-reduced-motion:reduce){.barre i{transition:none}}
+</style>
+</head>
+<body>
+<main>
+
+<!-- ACCUEIL -->
+<section id="accueil" class="ecran actif">
+  <h1>Ton test d’anglais, à l’oral</h1>
+  <p>12 petites questions. Tu écoutes, tu choisis le sens en français, puis tu répètes la phrase à voix haute.</p>
+  <p class="doux">Pas de note qui te juge. Si tu ne sais pas, tu touches « Je ne sais pas » : c’est normal et ça m’aide à trouver ton vrai niveau.</p>
+  <div id="dernier" class="bilan" style="display:none"></div>
+  <div class="espace"></div>
+  <button class="principal" id="btnCommencer">Commencer le test</button>
+  <div class="espace"></div>
+  <p class="doux" id="avertVoix"></p>
+</section>
+
+<!-- QUESTION -->
+<section id="question" class="ecran">
+  <div class="barre"><i id="progres"></i></div>
+  <div class="compteur" id="compteur"></div>
+
+  <button class="ecoute" id="btnEcouter">🔊 Écouter la phrase</button>
+  <button class="discret" id="btnVoirTexte">Voir le texte anglais</button>
+  <div id="texteEn" class="bilan" style="display:none"><div class="en" id="texteEnContenu"></div></div>
+
+  <h2>Qu’est-ce que ça veut dire ?</h2>
+  <div id="choix"></div>
+  <button class="nsp" id="btnNsp">Je ne sais pas</button>
+
+  <div id="retour" style="display:none">
+    <div class="bilan">
+      <div class="verdict" id="verdict"></div>
+      <div class="en" id="retourEn"></div>
+      <div class="fr" id="retourFr"></div>
+    </div>
+    <button class="secondaire" id="btnRepeter">🎤 Répète la phrase</button>
+    <div class="micro-retour" id="microRetour" aria-live="polite"></div>
+    <button class="principal" id="btnSuivant">Suivant</button>
+  </div>
+</section>
+
+<!-- RESULTAT -->
+<section id="resultat" class="ecran">
+  <h1>Ton résultat</h1>
+  <div class="niveau"><span>Ton niveau de départ</span><b id="niveauNom"></b></div>
+  <p id="niveauTexte"></p>
+  <div class="bilan" id="detail"></div>
+  <div class="bilan">
+    <h2>Ton programme</h2>
+    <p id="programme" style="margin:0"></p>
+  </div>
+  <p class="doux">Prochaine étape : les leçons du jour (10 minutes, avec voix, image et traduction). On les construit ensemble.</p>
+  <button class="principal" id="btnRefaire">Refaire le test</button>
+</section>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- Questions : 4 faciles, 4 moyennes, 4 plus difficiles ---------- */
+  var QUESTIONS = [
+    {n:1,en:"Hello, how are you?",ok:"Bonjour, comment vas-tu ?",faux:["Au revoir, à demain.","Merci beaucoup."]},
+    {n:1,en:"Thank you very much.",ok:"Merci beaucoup.",faux:["Excusez-moi.","S’il vous plaît."]},
+    {n:1,en:"What is your name?",ok:"Comment tu t’appelles ?",faux:["Où habites-tu ?","Quel âge as-tu ?"]},
+    {n:1,en:"I am from Cameroon.",ok:"Je viens du Cameroun.",faux:["Je vais au Cameroun.","J’habite à Paris."]},
+
+    {n:2,en:"I want to study in France.",ok:"Je veux étudier en France.",faux:["J’ai étudié en France.","Je travaille en France."]},
+    {n:2,en:"Where do you live?",ok:"Où habites-tu ?",faux:["Que fais-tu ?","Quand pars-tu ?"]},
+    {n:2,en:"I need your passport, please.",ok:"J’ai besoin de ton passeport, s’il te plaît.",faux:["J’ai perdu mon passeport.","Voici mon passeport."]},
+    {n:2,en:"The office opens at nine o’clock.",ok:"Le bureau ouvre à neuf heures.",faux:["Le bureau ferme à neuf heures.","Le bureau est à neuf kilomètres."]},
+
+    {n:3,en:"Could you send me your documents before Friday?",ok:"Pouvez-vous m’envoyer vos documents avant vendredi ?",faux:["Avez-vous reçu mes documents vendredi ?","Je vous ai envoyé vos documents."]},
+    {n:3,en:"I have been working here for two years.",ok:"Je travaille ici depuis deux ans.",faux:["J’ai travaillé ici pendant deux jours.","Je vais travailler ici dans deux ans."]},
+    {n:3,en:"If you don’t pay the fees, your application will not be processed.",ok:"Si vous ne payez pas les frais, votre dossier ne sera pas traité.",faux:["Si vous payez les frais, votre dossier sera accepté.","Vos frais ont été remboursés."]},
+    {n:3,en:"I would like to know which documents are required for the visa.",ok:"J’aimerais savoir quels documents sont requis pour le visa.",faux:["J’ai déjà reçu mon visa.","Je voudrais payer le visa."]}
+  ];
+
+  var NIVEAUX = [
+    {nom:"Débutant (A0)",texte:"Tu pars de zéro, et c’est un très bon point de départ : rien à désapprendre.",prog:"On commence par 20 phrases essentielles : saluer, se présenter, dire merci, les nombres. 5 nouvelles phrases par jour, toujours avec la voix et la traduction française."},
+    {nom:"Niveau A1",texte:"Tu connais déjà les bases : tu comprends des phrases très simples.",prog:"On passe aux phrases utiles du quotidien et du travail : demander un document, donner un rendez-vous, poser une question simple. Tu parles dès la première semaine."},
+    {nom:"Niveau A2",texte:"Tu comprends déjà pas mal de choses. Il manque surtout l’habitude de parler.",prog:"On travaille de vraies petites conversations : accueillir un client, parler de ton travail, comprendre au téléphone. Beaucoup de répétition à voix haute."},
+    {nom:"Niveau B1",texte:"Tu as une bonne base. Il s’agit maintenant de gagner en aisance.",prog:"On s’entraîne à parler sans te bloquer : conversations complètes sur l’admission, les visas et les démarches, avec des phrases plus longues."}
+  ];
+
+  /* ---------- Etat ---------- */
+  var idx = 0, ordre = [], score = {1:0,2:0,3:0}, repondu = false, voixOK = false;
+  var $ = function(id){return document.getElementById(id)};
+
+  /* ---------- Voix (synthèse) ---------- */
+  var synth = window.speechSynthesis || null;
+  function parler(texte){
+    if(!synth){return;}
+    try{
+      synth.cancel();
+      var u = new SpeechSynthesisUtterance(texte);
+      u.lang = "en-US"; u.rate = 0.85;
+      var voix = synth.getVoices().filter(function(v){return /^en/i.test(v.lang)});
+      if(voix.length){u.voice = voix[0];}
+      synth.speak(u);
+    }catch(e){}
+  }
+  function testerVoix(){
+    if(!synth){ $("avertVoix").textContent = "Ton navigateur ne sait pas lire l’anglais à voix haute. Ouvre le site avec Google Chrome."; return; }
+    var v = synth.getVoices();
+    voixOK = v.some(function(x){return /^en/i.test(x.lang)});
+    if(v.length && !voixOK){ $("avertVoix").textContent = "Aucune voix anglaise trouvée sur ce téléphone. Dans les réglages Android, ajoute la voix « Anglais » (Synthèse vocale Google)."; }
+  }
+  if(synth){ synth.onvoiceschanged = testerVoix; setTimeout(testerVoix,400); } else { testerVoix(); }
+
+  /* ---------- Micro (reconnaissance) ---------- */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  function mots(t){return t.toLowerCase().replace(/[’']/g,"").replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(Boolean)}
+  function similarite(cible, dit){
+    var c = mots(cible), d = mots(dit);
+    if(!c.length){return 0}
+    var ok = 0; c.forEach(function(m){ if(d.indexOf(m) > -1){ok++} });
+    return ok / c.length;
+  }
+  function ecouterMicro(cible){
+    var sortie = $("microRetour");
+    if(!SR){ sortie.textContent = "Le micro ne marche pas ici. Ouvre le site avec Google Chrome."; return; }
+    var r = new SR();
+    r.lang = "en-US"; r.interimResults = false; r.maxAlternatives = 3;
+    sortie.style.color = "var(--doux)";
+    sortie.textContent = "Je t’écoute… parle maintenant.";
+    r.onresult = function(e){
+      var meilleur = 0, dit = "";
+      for(var i = 0; i < e.results[0].length; i++){
+        var s = similarite(cible, e.results[0][i].transcript);
+        if(s >= meilleur){meilleur = s; dit = e.results[0][i].transcript;}
+      }
+      if(meilleur >= 0.7){
+        sortie.style.color = "var(--vert)";
+        sortie.textContent = "Bravo, c’est bien dit !";
+      }else{
+        sortie.style.color = "var(--rouge)";
+        sortie.textContent = "J’ai entendu : « " + dit + " ». Écoute encore et réessaie.";
+      }
+    };
+    r.onerror = function(e){
+      sortie.style.color = "var(--rouge)";
+      sortie.textContent = (e.error === "not-allowed") ? "Autorise le micro dans Chrome, puis réessaie." : "Je n’ai rien entendu. Réessaie.";
+    };
+    try{ r.start(); }catch(e){}
+  }
+
+  /* ---------- Outils ---------- */
+  function melanger(a){
+    a = a.slice();
+    for(var i = a.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function montrer(id){
+    ["accueil","question","resultat"].forEach(function(x){ $(x).classList.toggle("actif", x === id); });
+    window.scrollTo(0,0);
+  }
+  function lire(){ try{return JSON.parse(localStorage.getItem("anglaisNiveau")||"null")}catch(e){return null} }
+  function ecrire(o){ try{localStorage.setItem("anglaisNiveau", JSON.stringify(o))}catch(e){} }
+
+  /* ---------- Déroulé ---------- */
+  function afficherAccueil(){
+    var d = lire(), bloc = $("dernier");
+    if(d){
+      bloc.style.display = "block";
+      bloc.innerHTML = "<div class=\"verdict ok\">Dernier test : " + d.nom + "</div><div class=\"doux\">Fait le " + d.date + "</div>";
+    }else{ bloc.style.display = "none"; }
+    montrer("accueil");
+  }
+
+  function demarrer(){
+    // on garde l'ordre facile → difficile, on mélange seulement les réponses
+    ordre = QUESTIONS.slice();
+    idx = 0; score = {1:0,2:0,3:0};
+    afficherQuestion();
+  }
+
+  function afficherQuestion(){
+    var q = ordre[idx]; repondu = false;
+    $("compteur").textContent = "Question " + (idx + 1) + " sur " + ordre.length;
+    $("progres").style.width = (idx / ordre.length * 100) + "%";
+    $("texteEn").style.display = "none";
+    $("btnVoirTexte").style.display = "block";
+    $("texteEnContenu").textContent = q.en;
+    $("retour").style.display = "none";
+    $("microRetour").textContent = "";
+    $("btnNsp").style.display = "block";
+    var zone = $("choix"); zone.innerHTML = "";
+    melanger([q.ok].concat(q.faux)).forEach(function(texte){
+      var b = document.createElement("button");
+      b.className = "choix"; b.type = "button"; b.textContent = texte;
+      b.addEventListener("click", function(){ repondre(b, texte === q.ok); });
+      zone.appendChild(b);
+    });
+    montrer("question");
+    setTimeout(function(){ parler(q.en); }, 350);
+  }
+
+  function repondre(bouton, juste){
+    if(repondu){return}
+    repondu = true;
+    var q = ordre[idx];
+    if(juste){ score[q.n]++; }
+    var boutons = $("choix").querySelectorAll("button");
+    for(var i = 0; i < boutons.length; i++){
+      boutons[i].disabled = true;
+      if(boutons[i].textContent === q.ok){ boutons[i].classList.add("bon"); }
+    }
+    if(bouton && !juste){ bouton.classList.add("mauvais"); }
+    $("btnNsp").style.display = "none";
+    $("btnVoirTexte").style.display = "none";
+    $("texteEn").style.display = "none";
+    var v = $("verdict");
+    if(juste){ v.className = "verdict ok"; v.textContent = "Bonne réponse !"; }
+    else if(bouton){ v.className = "verdict non"; v.textContent = "Pas tout à fait. Voilà le sens :"; }
+    else { v.className = "verdict non"; v.textContent = "Pas de souci. Voilà le sens :"; }
+    $("retourEn").textContent = q.en;
+    $("retourFr").textContent = q.ok;
+    $("btnSuivant").textContent = (idx === ordre.length - 1) ? "Voir mon résultat" : "Suivant";
+    $("retour").style.display = "block";
+  }
+
+  function terminer(){
+    var niv = 0;
+    if(score[1] >= 3){ niv = 1;
+      if(score[2] >= 3){ niv = 2;
+        if(score[3] >= 3){ niv = 3; } } }
+    var n = NIVEAUX[niv];
+    $("niveauNom").textContent = n.nom;
+    $("niveauTexte").textContent = n.texte;
+    $("programme").textContent = n.prog;
+    $("detail").innerHTML =
+      "<div class=\"ligne\"><span>Phrases simples</span><b>" + score[1] + " / 4</b></div>" +
+      "<div class=\"ligne\"><span>Phrases du quotidien</span><b>" + score[2] + " / 4</b></div>" +
+      "<div class=\"ligne\"><span>Phrases plus longues</span><b>" + score[3] + " / 4</b></div>";
+    var d = new Date();
+    ecrire({nom:n.nom, niveau:niv, date:d.toLocaleDateString("fr-FR"), score:score});
+    $("progres").style.width = "100%";
+    montrer("resultat");
+  }
+
+  /* ---------- Boutons ---------- */
+  $("btnCommencer").addEventListener("click", demarrer);
+  $("btnEcouter").addEventListener("click", function(){ parler(ordre[idx].en); });
+  $("btnVoirTexte").addEventListener("click", function(){
+    $("texteEn").style.display = "block"; $("btnVoirTexte").style.display = "none";
+  });
+  $("btnNsp").addEventListener("click", function(){ repondre(null, false); });
+  $("btnRepeter").addEventListener("click", function(){ ecouterMicro(ordre[idx].en); });
+  $("btnSuivant").addEventListener("click", function(){
+    if(synth){ try{synth.cancel()}catch(e){} }
+    if(idx < ordre.length - 1){ idx++; afficherQuestion(); } else { terminer(); }
+  });
+  $("btnRefaire").addEventListener("click", function(){ afficherAccueil(); });
+
+  afficherAccueil();
+})();
+</script>
+</body>
+</html>
