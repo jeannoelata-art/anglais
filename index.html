@@ -98,6 +98,7 @@ function home(){
  h+=bub(td?"Ta série du jour est faite, bravo ! Tu peux continuer autant que tu veux : à chaque fois, de nouvelles phrases et des exercices différents. Demain, le jour "+n+" s’ouvre.":"D’abord ta série du jour : tu écoutes, tu comprends, tu répètes, tu parles avec moi. Ensuite, tu pourras continuer sans limite.");
  if(!td&&!fin)h+=B("g",'data-go="'+n+'"',"Commencer la série du jour");
  if(dn>0)h+=B(td||fin?"g":"k",'data-bonus="1"',"Continuer à s’entraîner");
+ h+=B("k",'data-aud="1"',"🎧 Cours audio");
  if(st.xd===ymd()&&st.xr)h+='<p class="d">Séries bonus faites aujourd’hui : '+st.xr+'</p>';
  var ks=Object.keys(st.hist).map(Number).sort(function(a,b){return a-b}).slice(-14);
  if(ks.length){h+='<h2>Ma progression</h2><div class="bx"><div class="gr">'+ks.map(function(k){return'<i style="height:'+Math.max(4,st.hist[k])+'%" title="Jour '+k+'"></i>'}).join("")+'</div><div class="d">Score des derniers jours (en %)</div></div>'}
@@ -166,11 +167,50 @@ function recap(){
  else h+=bub("Aucune erreur, c’est parfait !");
  if(st.slow>=3)h+=bub("Tu écoutes à vitesse très lente depuis 3 séances. Accélère un peu la voix : ton oreille doit s’habituer au vrai rythme.");
  Z.innerHTML=h+B("g",'data-bonus="1"',"Continuer : nouvelle série")+B("k","data-home=1","Retour à l’accueil")}
+var aud={on:false,p:false};
+function tx(i,t){var e=$(i);if(e)e.textContent=t}
+function gate(){return new Promise(function(r){(function f(){if(!aud.on||!aud.p)r();else setTimeout(f,200)})()})}
+function wt(ms){return new Promise(function(r){var t=0;(function f(){if(!aud.on)return r();if(!aud.p)t+=100;if(t>=ms)r();else setTimeout(f,100)})()})}
+function sp(t,l,r){return gate().then(function(){return new Promise(function(res){
+ if(!aud.on||!S)return res();
+ var u=new SpeechSynthesisUtterance(t),v=S.getVoices().filter(function(x){return x.lang.toLowerCase().replace("_","-").indexOf(l.slice(0,2))==0});
+ u.lang=l;u.rate=r||(l=="en-US"?st.rate:0.95);if(v.length)u.voice=v[0];
+ u.onend=u.onerror=function(){res()};
+ try{S.cancel();S.speak(u)}catch(e){res()}
+ setTimeout(res,25000)})})}
+function audio(){
+ aud={on:true,p:false};
+ Z.innerHTML='<div class="bar"><i id="ab" style="width:0"></i></div><h1>🎧 Cours audio</h1><div class="hero"><span id="at">Préparation…</span><b id="af"></b></div><div class="bx"><div class="en" id="ae" style="min-height:34px"></div></div>'+B("k",'data-ap="1" id="apb"',"⏸ Pause")+B("k",'data-as="1"',"Arrêter le cours")+'<p class="d">Garde ton téléphone allumé et le volume assez fort. Tu écoutes, puis tu répètes à voix haute pendant les silences. Si la voix française n’est pas bonne, installe la voix « Français » dans les réglages Android (Synthèse vocale).</p>';
+ lecon();window.scrollTo(0,0)}
+async function lecon(){
+ var n=Math.min(56,st.done.length+1),w=wk(n),ph=low(pw(w),6),i,p,rv,
+ fr=function(t){return sp(t,"fr-FR")},en=function(t,r){return sp(t,"en-US",r)},
+ pg=function(x){var e=$("ab");if(e)e.style.width=x+"%"};
+ try{if(navigator.wakeLock)navigator.wakeLock.request("screen")}catch(e){}
+ tx("at","Introduction");tx("af",W[w][0]);
+ await fr("Bonjour ! Voici ton cours audio. Le thème : "+W[w][0]+". Écoute, puis répète à voix haute, comme si tu parlais avec quelqu’un.");
+ await fr("L’astuce du jour. "+W[w][1].replace(/[«»]/g,"").replace(/→/g," devient "));
+ for(i=0;i<ph.length&&aud.on;i++){
+  p=ph[i];pg(i/(ph.length+1)*100);tx("at","Phrase "+(i+1)+" sur "+ph.length);tx("af",p.fr);tx("ae","");
+  await fr("Comment dit-on : "+p.fr+" ?");await wt(2500);
+  tx("ae",p.en);await en(p.en,0.8);
+  await fr("Répète après moi.");await wt(500);await en(p.en,0.8);await wt(4500);
+  await en(p.en);await wt(3500);
+  st.seen[p.k]=(st.seen[p.k]||0)+1;save()}
+ if(aud.on){tx("at","Petit test");tx("af","");tx("ae","");pg(90);
+  await fr("Petit test. Je te donne le français, tu dis la phrase en anglais, puis tu écoutes la réponse.");
+  rv=sh(ph).slice(0,3);
+  for(i=0;i<rv.length&&aud.on;i++){p=rv[i];tx("af",p.fr);tx("ae","");await fr(p.fr);await wt(5000);tx("ae",p.en);await en(p.en);await wt(1500)}}
+ if(aud.on){pg(100);tx("at","Terminé 🎉");tx("af","Bravo !");tx("ae","");await fr("Bravo ! Le cours est terminé. Reviens demain pour de nouvelles phrases.")}
+ aud.on=false}
 Z.onclick=function(e){var b=e.target.closest("button");if(!b)return;var d=b.dataset;
  if(d.say)say(d.say);
  else if(d.show){$(d.show).style.display="block";b.style.display="none"}
  else if(d.go)start(+d.go,false);
  else if(d.bonus)start(0,true);
+ else if(d.aud)audio();
+ else if(d.ap){aud.p=!aud.p;b.textContent=aud.p?"▶ Reprendre":"⏸ Pause";try{aud.p?S.pause():S.resume()}catch(x){}}
+ else if(d.as){aud.on=false;try{S.cancel()}catch(x){}home()}
  else if(d.home)home();
  else if(d.next)nxt();
  else if(d.mic){var k=d.k,qs=d.qs;mic(d.mic,$("out"),function(ok){if(k!=null){k=+k;if(ok){if(st.weak[k]){st.weak[k]--;if(st.weak[k]<=0)delete st.weak[k]}}else st.weak[k]=3;save()}if(qs&&ok)ans(true)})}
